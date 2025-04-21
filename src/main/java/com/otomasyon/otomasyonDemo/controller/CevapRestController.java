@@ -2,29 +2,32 @@ package com.otomasyon.otomasyonDemo.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.otomasyon.otomasyonDemo.entity.Cevap;
-import com.otomasyon.otomasyonDemo.repository.CevapRepository;
-import com.otomasyon.otomasyonDemo.repository.DegerlendirmeRepository;
-import com.otomasyon.otomasyonDemo.repository.SoruRepository;
+import com.otomasyon.otomasyonDemo.entity.Degerlendirme;
+import com.otomasyon.otomasyonDemo.entity.Soru;
+import com.otomasyon.otomasyonDemo.serviceInterface.CevapService;
+import com.otomasyon.otomasyonDemo.serviceInterface.DegerlendirmeService;
+import com.otomasyon.otomasyonDemo.serviceInterface.SoruService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 
 @RestController
 @RequestMapping("/api/cevap")
 public class CevapRestController {
-    private CevapRepository cevapRepository;
-    private DegerlendirmeRepository degerlendirmeRepository;
-    private SoruRepository soruRepository;
+    private CevapService cevapService;
+    private DegerlendirmeService degerlendirmeService;
+    private SoruService soruService;
     private ObjectMapper objectMapper;
 
     @Autowired
-    public CevapRestController(CevapRepository cevapRepository, DegerlendirmeRepository degerlendirmeRepository, SoruRepository soruRepository, ObjectMapper objectMapper) {
-        this.cevapRepository = cevapRepository;
-        this.degerlendirmeRepository = degerlendirmeRepository;
-        this.soruRepository = soruRepository;
+    public CevapRestController(CevapService cevapService, DegerlendirmeService degerlendirmeService, SoruService soruService, ObjectMapper objectMapper) {
+        this.cevapService = cevapService;
+        this.degerlendirmeService = degerlendirmeService;
+        this.soruService = soruService;
         this.objectMapper = objectMapper;
     }
 
@@ -32,45 +35,53 @@ public class CevapRestController {
     @PreAuthorize("hasAnyRole('Akademisyen','Idareci')")
     @GetMapping("/all")
     public List<Cevap> findAll() {
-        return cevapRepository.findAll();
+        return cevapService.findAll();
     }
+
     @PreAuthorize("hasAnyRole('Akademisyen','Idareci')")
     @GetMapping("/id/{id}")
-    public Cevap getCevap(@PathVariable Long id) {
-        return cevapRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cevap bulunamadı - " + id));
+    public List<Cevap> getCevap(@PathVariable Long id) {
+        return cevapService.findAll();
     }
-    @PreAuthorize("hasAnyRole('Ogrenci','Idareci')")
+
+    @PreAuthorize("hasAnyRole('Ogrenci', 'Idareci')")
     @PostMapping("/add")
     public Cevap addCevap(@RequestBody Cevap theCevap) {
         theCevap.setId(null);
-        Cevap dbCevap = cevapRepository.save(theCevap);
-        return dbCevap;
+        Optional<Soru> soru = soruService.findById(theCevap.getSoru().getId());
+        if (soru.isEmpty()) {
+            return null;
+        }
+        Optional<Degerlendirme> degerlendirme = degerlendirmeService.findById(theCevap.getDegerlendirme().getId());
+        if (degerlendirme.isEmpty()) {
+            return null;
+        }
+        return cevapService.save(theCevap);
     }
-    @PreAuthorize("hasAnyRole('Ogrenci','Idareci')")
+
+    @PreAuthorize("hasAnyRole('Ogrenci', 'Idareci')")
     @PutMapping("/update/{id}")
-    public Cevap updateCevap(@RequestBody Cevap theCevap) {
-        Long cevapId = theCevap.getId();
-        var cevap = cevapRepository.findById(cevapId)
-                .orElseThrow(() -> new RuntimeException("Cevap bulunamadı: " + cevapId));
-        Long degerlendirmeId = theCevap.getDegerlendirme().getId();
-        var degerlendirme = degerlendirmeRepository.findById(degerlendirmeId)
-                .orElseThrow(() -> new RuntimeException("Degerlendirme bulunamadı: " + degerlendirmeId));
-        Long soruId = theCevap.getSoru().getId();
-        var soru = soruRepository.findById(soruId)
-                .orElseThrow(() -> new RuntimeException("Soru bulunamadı: " + soruId));
-        cevap.setDegerlendirme(degerlendirme);
-        cevap.setSoru(soru);
-        cevap.setPuan(theCevap.getPuan());
-        return cevapRepository.save(cevap);
+    public Cevap updateCevap(@PathVariable Long id, @RequestBody Cevap theCevap) {
+        var soru = soruService.findById(theCevap.getSoru().getId());
+        if (soru.isEmpty()) {
+            return null;
+        }
+        theCevap.setSoru(soru.get());
+
+        var degerlendirmeOpt = degerlendirmeService.findById(theCevap.getDegerlendirme().getId());
+        if (degerlendirmeOpt.isEmpty()) {
+            return null;
+        }
+        theCevap.setDegerlendirme(degerlendirmeOpt.get());
+
+        return cevapService.update(id, theCevap);
     }
 
     @PreAuthorize("hasRole('Idareci')")
     @DeleteMapping("/delete/{id}")
     public String deleteCevap(@PathVariable Long id) {
-        cevapRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cevap bulunamadı - " + id));
-        cevapRepository.deleteById(id);
+        cevapService.deleteById(id);
         return "Cevap silindi - " + id;
     }
+
 }

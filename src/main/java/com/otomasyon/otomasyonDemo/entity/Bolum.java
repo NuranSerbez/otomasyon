@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Optional;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -23,4 +25,8 @@ public class Bolum {
     @JoinColumn(name = "fakulte")
     @JsonBackReference
     private Fakulte fakulte;
+
+    public void setFakulte(Optional<Fakulte> fakulte) {
+
+    }
 }

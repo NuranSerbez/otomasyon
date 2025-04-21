@@ -3,52 +3,59 @@ package com.otomasyon.otomasyonDemo.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.otomasyon.otomasyonDemo.entity.Rol;
 import com.otomasyon.otomasyonDemo.entity.User;
-import com.otomasyon.otomasyonDemo.repository.UserRepository;
-import com.otomasyon.otomasyonDemo.repository.RolRepository;
+import com.otomasyon.otomasyonDemo.serviceInterface.RolService;
+import com.otomasyon.otomasyonDemo.serviceInterface.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/user")
 public class UserRestController {
-    private UserRepository userRepository;
-    private RolRepository rolRepository;
+    private UserService userService;
+    private RolService rolService;
     private ObjectMapper objectMapper;
+
     @Autowired
-    public UserRestController(UserRepository userRepository, RolRepository rolRepository, ObjectMapper objectMapper) {
-        this.userRepository = userRepository;
-        this.rolRepository = rolRepository;
+    public UserRestController(UserService userService, RolService rolService, ObjectMapper objectMapper) {
+        this.userService = userService;
+        this.rolService = rolService;
         this.objectMapper = objectMapper;
     }
+
     @PreAuthorize("hasAnyRole('Idareci', 'Akademisyen', 'Ogrenci')")
 
     @GetMapping("/all")
     public List<User> findAll() {
-        return userRepository.findAll();
+        return userService.findAll();
     }
+
     @PreAuthorize("hasAnyRole('Idareci', 'Akademisyen', 'Ogrenci')")
 
     @GetMapping("/id/{id}")
     public User getUser(@PathVariable Long id) {
-        return userRepository.findById(id)
+        return userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı - " + id));
     }
+
     @PreAuthorize("hasAnyRole('Idareci', 'Akademisyen', 'Ogrenci')")
 
     @PostMapping("/add")
     public User addUser(@RequestBody User theUser) {
         theUser.setId(null);
-        User dbUser = userRepository.save(theUser);
+        User dbUser = userService.save(theUser);
         return dbUser;
     }
+
     @PreAuthorize("hasAnyRole('Idareci', 'Akademisyen', 'Ogrenci')")
     @PutMapping("/update/{id}")
     public User updateUser(@PathVariable Long id, @RequestBody User theUser) {
-        User user = userRepository.findById(id)
+        User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + id));
+
         user.setIsim(theUser.getIsim());
         user.setSoyisim(theUser.getSoyisim());
         user.setTckn(theUser.getTckn());
@@ -57,19 +64,21 @@ public class UserRestController {
         user.setTelefon(theUser.getTelefon());
         user.setPassword(theUser.getPassword());
         user.setSifreGüncelligi(theUser.isSifreGüncelligi());
+
         Long rolId = theUser.getRol().getId();
-        Rol rol = rolRepository.findById(rolId)
-                .orElseThrow(() -> new RuntimeException("Rol bulunamadı: " + rolId));
-        user.setRol(rol);
-        return userRepository.save(user);
+        Optional<Rol> rol = rolService.findById(rolId);
+        if (rol.isPresent()) {
+            user.setRol(rol.get());
+        }
+        return userService.save(user);
     }
 
     @PreAuthorize("hasAnyRole('Idareci', 'Akademisyen', 'Ogrenci')")
     @DeleteMapping("/delete/{id}")
     public String deleteUser(@PathVariable Long id) {
-        userRepository.findById(id)
+        userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunmadı - " + id));
-        userRepository.deleteById(id);
+        userService.deleteById(id);
         return "Kullanıcı silindi - " + id;
     }
 }

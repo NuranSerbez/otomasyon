@@ -1,34 +1,51 @@
 package com.otomasyon.otomasyonDemo.serviceImpl;
 
-import com.otomasyon.otomasyonDemo.entity.User;
-import com.otomasyon.otomasyonDemo.serviceInterface.UserService;
+import com.otomasyon.otomasyonDemo.entity.Bolum;
+import com.otomasyon.otomasyonDemo.repository.BolumRepository;
+import com.otomasyon.otomasyonDemo.serviceInterface.BolumService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
-public class BolumServiceImpl implements UserService {
+@Service
+public class BolumServiceImpl implements BolumService {
 
-    @Override
-    public List<User> findAll() {
-        return List.of();
+    private final BolumRepository bolumRepository;
+
+    @Autowired
+    public BolumServiceImpl(BolumRepository bolumRepository) {
+        this.bolumRepository = bolumRepository;
     }
 
     @Override
-    public User findById(Long id) {
-        return null;
+    public List<Bolum> findAll() {
+        return bolumRepository.findAll();
     }
 
     @Override
-    public User save(User theUser) {
-        return null;
+    public Optional<Bolum> findById(Long id) {
+        return bolumRepository.findById(id);
     }
 
     @Override
-    public User update(Long id) {
-        return null;
+    public Bolum save(Bolum theBolum) {
+        return bolumRepository.save(theBolum);
     }
 
     @Override
-    public void deleteById(Long id) {
+    public Bolum update(Long id, Bolum theBolum) {
+        return bolumRepository.save(theBolum);
+    }
 
+
+    @Override
+    public BolumRepository deleteById(Long id) {
+        if (bolumRepository.existsById(id)) {
+            bolumRepository.deleteById(id);
+            return bolumRepository;
+        }
+        return bolumRepository;
     }
 }

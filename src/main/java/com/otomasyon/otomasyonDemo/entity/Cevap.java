@@ -28,4 +28,5 @@ public class Cevap {
 
     @Column(name = "puan")
     private int puan;
+
 }

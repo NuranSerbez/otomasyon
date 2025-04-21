@@ -23,7 +23,7 @@ public class Program {
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
-            name = "program_bolum", // ara tablo adı
+            name = "program_bolum",
             joinColumns = @JoinColumn(name = "program_id"),
             inverseJoinColumns = @JoinColumn(name = "bolum_id")
     )
